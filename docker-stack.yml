@@ -1,0 +1,64 @@
+version: "3.8"
+services:
+  nginx:
+    image: sasorirose/nginx:latest
+    ports:
+      - "8082:80"
+    deploy:
+      replicas: 2
+      restart_policy:
+        condition: on-failure
+    networks:
+      - devops
+
+  nginx-proxy-manager:
+    image: sasorirose/devops-lab-nginx-proxy-manager:latest
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    volumes:
+      - ./nginx-proxy-manager/data:/data
+      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - devops
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./gitlab-runner/config:/etc/gitlab-runner
+      - ./install-docker.sh:/install-docker.sh
+    entrypoint: ["/bin/bash", "/install-docker.sh"]
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - devops
+
+  gitlab:
+    image: sasorirose/devops-lab-gitlab:latest
+    hostname: gitlab.local
+    ports:
+      - "8080:80"
+      - "8443:443"
+      - "2222:22"
+    volumes:
+      - ./gitlab/config:/etc/gitlab
+      - ./gitlab/logs:/var/log/gitlab
+      - ./gitlab/data:/var/opt/gitlab
+    deploy:
+      replicas: 3
+      restart_policy:
+        condition: on-failure
+    networks:
+      - devops
+
+networks:
+  devops:
+    driver: overlay

@@ -1,0 +1,11 @@
+FROM gitlab/gitlab-ce:latest
+
+RUN apt update && apt install -y vim
+
+ENV GITLAB_OMNIBUS_CONFIG="external_url 'http://gitlab.local'"
+
+EXPOSE 80 443 22
+
+VOLUME ["/etc/gitlab", "/var/log/gitlab", "/var/opt/gitlab"]
+
+CMD ["/assets/wrapper"]

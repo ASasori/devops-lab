@@ -1,0 +1,59 @@
+# version: "3.9"
+
+services:
+  nginx:
+    build:
+      context: ./dockerfiles/nginx
+      dockerfile: Dockerfile.nginx
+    restart: unless-stopped
+    ports:
+      - "8082:80"
+    volumes:
+      - ./configs/nginx:/etc/nginx/conf.d:ro
+    networks:
+      - devops-network
+
+  nginx-proxy-manager:
+    build:
+      context: ./dockerfiles/nginx-proxy-manager
+      dockerfile: Dockerfile.nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "81:81"
+      - "443:443"
+    volumes:
+      - ./data/npm:/data
+      - ./data/letsencrypt:/etc/letsencrypt
+    networks:
+      - devops-network
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:alpine
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./configs/gitlab-runner:/etc/gitlab-runner
+    networks:
+      - devops-network
+
+  gitlab:
+    build:
+      context: ./dockerfiles/gitlab
+      dockerfile: Dockerfile.gitlab
+    restart: unless-stopped
+    hostname: gitlab.local
+    ports:
+      - "8080:80"
+      - "8443:443"
+      - "2222:22"
+    volumes:
+      - ./data/gitlab/config:/etc/gitlab
+      - ./data/gitlab/logs:/var/log/gitlab
+      - ./data/gitlab/data:/var/opt/gitlab
+    networks:
+      - devops-network
+
+networks:
+  devops-network:
+    driver: bridge

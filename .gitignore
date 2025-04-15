@@ -1,0 +1,20 @@
+# Local data
+/data/
+!/data/.gitkeep
+
+# Environment files
+.env
+*.env.local
+
+# Docker
+*.tar
+*.7z
+
+# Logs
+*.log
+
+# GitLab data
+gitlab/data/
+gitlab/logs/
+gitlab/config/.gitlab.rb.swp
+*.swp

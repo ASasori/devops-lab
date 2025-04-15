@@ -1,0 +1,4 @@
+FROM jc21/nginx-proxy-manager:latest
+
+# Expose default ports for Nginx Proxy Manager
+EXPOSE 80 81 443
