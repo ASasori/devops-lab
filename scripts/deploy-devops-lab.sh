@@ -168,58 +168,82 @@
 # # Chạy main function
 # main
 
-
 #!/bin/bash
-# scripts/deploy.sh
+# scripts/deploy-devops-lab.sh
 
 set -e
 
-echo "🚀 Starting deployment..."
-echo "📦 Copying environment file"
-cp .env.sample .env
-
-echo "🐳 Starting Docker services"
-install_docker_compose() {
-    if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
-        log "Cài đặt Docker Compose..."
-        sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" \
-            -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-        sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
-    fi
+# Định nghĩa hàm log
+log() {
+  echo -e "\n[$(date +'%Y-%m-%d %H:%M:%S')] >>> $1"
 }
 
+# Hàm cài đặt Docker
+install_docker() {
+  log "Cài đặt Docker..."
+  sudo apt-get update
+  sudo apt-get install -y docker.io
+  sudo usermod -aG docker $USER
+  newgrp docker
+}
+
+# Hàm cài đặt Docker Compose
+install_docker_compose() {
+  if ! command -v docker-compose &> /dev/null && ! docker compose version &> /dev/null; then
+    log "Cài đặt Docker Compose..."
+    sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" \
+      -o /usr/local/bin/docker-compose
+    sudo chmod +x /usr/local/bin/docker-compose
+    sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+  fi
+}
+
+# Hàm chạy compose
 run_compose() {
-    # Kiểm tra phiên bản Docker Compose
-    if docker compose version &> /dev/null; then
-        log "Sử dụng Docker Compose V2"
-        docker compose up -d --build
-    else
-        log "Sử dụng Docker Compose V1"
-        docker-compose up -d --build
-    fi
+  if docker compose version &> /dev/null; then
+    log "Sử dụng Docker Compose V2"
+    docker compose up -d --build
+  else
+    log "Sử dụng Docker Compose V1"
+    docker-compose up -d --build
+  fi
 }
 
 main() {
-    log "Bắt đầu triển khai DevOps Lab"
-    
-    # Kiểm tra và cài đặt Docker
-    if ! command -v docker &> /dev/null; then
-        install_docker
-    fi
-    
-    # Kiểm tra và cài đặt Docker Compose
-    install_docker_compose
-    
-    # ... (phần còn lại giữ nguyên)
-    
-    log "🐳 Starting Docker services"
-    run_compose
-    
-    # ... (phần còn lại)
-    docker-compose up -d --build
+  log "Bắt đầu triển khai DevOps Lab"
+  
+  # Copy environment file
+  if [ ! -f .env ]; then
+    log "Tạo file .env từ mẫu"
+    cp .env.sample .env
+  fi
 
-    echo "✅ Deployment completed! Access services:"
-    echo "- GitLab: http://localhost:8080"
-    echo "- Nginx: http://localhost:8082"
+  # Kiểm tra và cài đặt Docker
+  if ! command -v docker &> /dev/null; then
+    install_docker
+  else
+    log "Docker đã được cài đặt"
+  fi
+
+  # Kiểm tra và cài đặt Docker Compose
+  install_docker_compose
+
+  # Kiểm tra quyền thư mục
+  log "Kiểm tra quyền thư mục"
+  sudo chown -R $USER:$USER .
+  sudo chmod -R 755 .
+
+  # Chạy docker compose
+  log "Khởi động các dịch vụ"
+  run_compose
+
+  # Hiển thị thông tin
+  log "✅ Triển khai hoàn tất!"
+  echo -e "\nTruy cập các dịch vụ:"
+  echo "- GitLab: http://localhost:8080"
+  echo "- Nginx Proxy Manager: http://localhost:81"
+  echo "- Nginx: http://localhost:8082"
 }
+
+# Chạy main function
+main
